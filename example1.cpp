@@ -7,6 +7,7 @@
 #define NUM_COLORS 8
 #define FALSE 0
 #define TRUE 1
+#define PERCEPTIONS 1
 
 #include "Angel.h"
 
@@ -58,8 +59,9 @@ typedef struct particle {
 } particle;
 
 particle particles[MAX_NUM_PARTICLES];       /* particle system */
-point4 centerMass;
-vec4 avgVelocity;
+point4 centerMass[MAX_NUM_PARTICLES];
+vec4 avgVelocity[MAX_NUM_PARTICLES];
+vec4 separation[MAX_NUM_PARTICLES];
 /* initial state of particle system */
 
 int present_time;
@@ -104,40 +106,96 @@ colorcube()
 
 
 void calcCenterMass(void) {
-    float sumX = 0;
-    float sumY = 0;
-    float sumZ = 0;
-    for ( int i = 0; i < num_particles; i++ ) {    
-            sumX += particles[i].position[0];
-            sumY += particles[i].position[1];
-            sumZ += particles[i].position[2];
+    for(int i =0 ; i <num_particles; i++){
+        centerMass[i][0] = 0;
+        centerMass[i][1] = 0;
+        centerMass[i][2] = 0;
+        float sumX = 0;
+        float sumY = 0;
+        float sumZ = 0; 
+        int total  = 0;
+        for ( int j = 0; j < num_particles; j++ ) {   
+            if(abs(particles[i].position[0] - particles[j].position[0]) <= PERCEPTIONS 
+             && abs(particles[i].position[1] - particles[j].position[1]) <= PERCEPTIONS 
+            && abs(particles[i].position[2] - particles[j].position[2]) <= PERCEPTIONS ) {
+
+                sumX += particles[j].position[0];
+                sumY += particles[j].position[1];
+                sumZ += particles[j].position[2];
+                total += 1;
+                }
+            }
+        if(total > 0) {
+            centerMass[i][0] = sumX / total;
+            centerMass[i][1] = sumY / total;
+            centerMass[i][2] = sumZ / total;
         }
-    centerMass[0] = sumX / num_particles;
-    centerMass[1] = sumY / num_particles;
-    centerMass[2] = sumZ / num_particles;
-    centerMass[3] = 1.0;
+    }    
 }
 
 void calcAvgVelocity(void) {
-    float sumX = 0;
-    float sumY = 0;
-    float sumZ = 0;
-    for ( int i = 0; i < num_particles; i++ ) {    
-            sumX += particles[i].velocity[0];
-            sumY += particles[i].velocity[1];
-            sumZ += particles[i].velocity[2];
+
+    for(int i =0 ; i <num_particles; i++){
+        avgVelocity[i][0] = 0;
+        avgVelocity[i][1] = 0;
+        avgVelocity[i][2] = 0;
+        float sumX = 0;
+        float sumY = 0;
+        float sumZ = 0; 
+        int total  = 0;
+        for ( int j = 0; j < num_particles; j++ ) {   
+            if(abs(particles[i].position[0] - particles[j].position[0]) <= PERCEPTIONS 
+             && abs(particles[i].position[1] - particles[j].position[1]) <= PERCEPTIONS 
+            && abs(particles[i].position[2] - particles[j].position[2]) <= PERCEPTIONS ) {
+                sumX += particles[j].velocity[0];
+                sumY += particles[j].velocity[1];
+                sumZ += particles[j].velocity[2];
+                total += 1;
+                }
+            }
+        if(total > 0) {
+            avgVelocity[i][0] = sumX / total;
+            avgVelocity[i][1] = sumY / total;
+            avgVelocity[i][2] = sumZ / total;
         }
-    avgVelocity[0] = sumX / num_particles;
-    avgVelocity[1] = sumY / num_particles;
-    avgVelocity[2] = sumZ / num_particles;
-    // avgVelocity[3] = 1.0;
+    }
 }
 
+void calcSeparation(void) {
+
+    for(int i =0 ; i <num_particles; i++){
+        separation[i][0] = 0;
+        separation[i][1] = 0;
+        separation[i][2] = 0; 
+        int total  = 0;
+        for ( int j = 0; j < num_particles; j++ ) {   
+            vec4  distance, difference;            
+            distance[0] = particles[j].position[0] - particles[i].position[0];
+            distance[1] = particles[j].position[1] - particles[i].position[1];
+            distance[2] = particles[j].position[2] - particles[i].position[2];
+            if(particles[i].position != particles[j].position 
+            && abs(particles[i].position[0] - particles[j].position[0]) <= PERCEPTIONS 
+             && abs(particles[i].position[1] - particles[j].position[1]) <= PERCEPTIONS 
+            && abs(particles[i].position[2] - particles[j].position[2]) <= PERCEPTIONS ) 
+                difference = particles[i].position - particles[j].position;
+                for(int k = 0; k <3; k ++) {
+                    difference[k] /= distance[k];
+                    separation[k] += difference[k];
+                }
+                total += 1;
+            }
+        if(total > 0) {
+            separation[i][0] /=  total;
+            separation[i][1] /=  total;
+            separation[i][2] /=  total;
+        }
+    }
+}
 
 
 void createParticle(void) {
         /* set up particles with random locations and velocities */
-    srand(1);
+    // srand(1);
     for ( int i = 0; i < num_particles; i++ ) {
         particles[i].mass = 1.0;
         particles[i].color = i % NUM_COLORS;
@@ -149,8 +207,17 @@ void createParticle(void) {
                 speed * 2.0 * ( ( float ) rand() / RAND_MAX ) - 1.0;
                 // speed * 2.0 *  - 1.0;
         }
+
+        std::cout<< "Ini adalah X  ke   "<< i << "   " << particles[i].velocity[0] <<std::endl;
+        std::cout<< "Ini adalah Y  ke   "<< i << "   " << particles[i].velocity[1] <<std::endl;
+        std::cout<< "Ini adalah Z  ke   "<< i << "   " << particles[i].velocity[2] <<std::endl;
+
         particles[i].position[3] = 1.0;
     }
+    calcAvgVelocity();
+    std::cout<< "Ini adalah X     " << avgVelocity[0] <<std::endl;
+    std::cout<< "Ini adalah Y     " << avgVelocity[1] <<std::endl;
+    std::cout<< "Ini adalah Z     " << avgVelocity[2] <<std::endl;
 
     // calcCenterMass();
 
@@ -246,6 +313,14 @@ collision( int n )
 }
 
 //----------------------------------------------------------------------------
+void normalize(void) {
+    for(int i = 0; i < num_particles; i++) {
+        // for(int j = 0; j <3; j++) {
+            particles[i].velocity = normalize(particles[i].velocity) *speed;
+        // }
+    }
+}
+
 
 void
 idle( void )
@@ -259,19 +334,26 @@ idle( void )
     present_time = glutGet( GLUT_ELAPSED_TIME );
     // std::cout <<present_time  <<std::endl;
     // std::cout <<last_time <<std::endl;
-    dt = 0.00001 * ( present_time - last_time );
+    dt = 0.001 * ( present_time - last_time );
     calcCenterMass();
     calcAvgVelocity();
+    calcSeparation();   
     for ( i = 0; i < num_particles; i++ ) {
         for ( j = 0; j < 3; j++ ) {
-            particles[i].position[j] += dt * particles[i].velocity[j];
-            particles[i].velocity[j] +=
-                // dt * forces( i, j ) / particles[i].mass;
-                (dt * forces( i, j ) / particles[i].mass) + 
-                 (centerMass[j] - particles[i].position[j]) ;
-                //  + avgVelocity[j] ;
+            particles[i].position[j] += dt * (particles[i].velocity[j]);
+
+            particles[i].velocity[j] += (dt * avgVelocity[i][j]) +
+                dt* (centerMass[i][j] - particles[i].position[j]) +
+                // (dt * separation[i][j]) +
+                (dt * forces( i, j ) / particles[i].mass) ;
+                //  + dt*avgVelocity[j] ;
+            normalize();
+            
         }
         collision( i );
+        // std::cout<< "Ini adalah X     " << separation[i][0] <<std::endl;
+        // std::cout<< "Ini adalah Y     " << separation[i][1] <<std::endl;
+        // std::cout<< "Ini adalah Z     " << separation[i][2] <<std::endl;
     }
     if ( repulsion )
         for ( i = 0; i < num_particles; i++ )
@@ -286,9 +368,9 @@ idle( void )
             }
     last_time = present_time;
 
-    std::cout<< "Ini adalah X     " << avgVelocity[0] <<std::endl;
-    std::cout<< "Ini adalah Y     " << avgVelocity[1] <<std::endl;
-    std::cout<< "Ini adalah Z     " << avgVelocity[2] <<std::endl;
+    
+    
+    
 
     glutPostRedisplay();
 }
