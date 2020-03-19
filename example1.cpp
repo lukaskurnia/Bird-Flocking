@@ -71,7 +71,7 @@ float point_size = INITIAL_POINT_SIZE;
 float speed = INITIAL_SPEED;
 bool gravity = FALSE;            /* gravity off */
 bool elastic = FALSE;            /* restitution off */
-bool repulsion = FALSE;          /* repulsion off */
+bool repulsion = TRUE;          /* repulsion off */
 float coef = 1.0;                 /* perfectly elastic collisions */
 float d2[MAX_NUM_PARTICLES][MAX_NUM_PARTICLES];   /* array for interparticle distances */
 
