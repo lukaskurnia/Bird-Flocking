@@ -58,7 +58,8 @@ typedef struct particle {
 } particle;
 
 particle particles[MAX_NUM_PARTICLES];       /* particle system */
-
+point4 centerMass;
+vec4 avgVelocity;
 /* initial state of particle system */
 
 int present_time;
@@ -100,19 +101,59 @@ colorcube()
 }
 
 //----------------------------------------------------------------------------
+
+
+void calcCenterMass(void) {
+    float sumX = 0;
+    float sumY = 0;
+    float sumZ = 0;
+    for ( int i = 0; i < num_particles; i++ ) {    
+            sumX += particles[i].position[0];
+            sumY += particles[i].position[1];
+            sumZ += particles[i].position[2];
+        }
+    centerMass[0] = sumX / num_particles;
+    centerMass[1] = sumY / num_particles;
+    centerMass[2] = sumZ / num_particles;
+    centerMass[3] = 1.0;
+}
+
+void calcAvgVelocity(void) {
+    float sumX = 0;
+    float sumY = 0;
+    float sumZ = 0;
+    for ( int i = 0; i < num_particles; i++ ) {    
+            sumX += particles[i].velocity[0];
+            sumY += particles[i].velocity[1];
+            sumZ += particles[i].velocity[2];
+        }
+    avgVelocity[0] = sumX / num_particles;
+    avgVelocity[1] = sumY / num_particles;
+    avgVelocity[2] = sumZ / num_particles;
+    // avgVelocity[3] = 1.0;
+}
+
+
+
 void createParticle(void) {
         /* set up particles with random locations and velocities */
+    srand(1);
     for ( int i = 0; i < num_particles; i++ ) {
         particles[i].mass = 1.0;
         particles[i].color = i % NUM_COLORS;
         for ( int j = 0; j < 3; j++ ) {
             particles[i].position[j] =
+                // 2.0 * ( ( float ) rand() / RAND_MAX ) - 1.0;
                 2.0 * ( ( float ) rand() / RAND_MAX ) - 1.0;
             particles[i].velocity[j] =
                 speed * 2.0 * ( ( float ) rand() / RAND_MAX ) - 1.0;
+                // speed * 2.0 *  - 1.0;
         }
         particles[i].position[3] = 1.0;
     }
+
+    // calcCenterMass();
+
 
     glClearColor( 0.5, 0.5, 0.5, 1.0 );
     glPointSize( point_size );
@@ -179,6 +220,8 @@ forces( int i, int j )
     return ( force );
 }
 
+
+
 //----------------------------------------------------------------------------
 
 void
@@ -214,12 +257,19 @@ idle( void )
     float
         dt;
     present_time = glutGet( GLUT_ELAPSED_TIME );
-    dt = 0.001 * ( present_time - last_time );
+    // std::cout <<present_time  <<std::endl;
+    // std::cout <<last_time <<std::endl;
+    dt = 0.00001 * ( present_time - last_time );
+    calcCenterMass();
+    calcAvgVelocity();
     for ( i = 0; i < num_particles; i++ ) {
         for ( j = 0; j < 3; j++ ) {
             particles[i].position[j] += dt * particles[i].velocity[j];
             particles[i].velocity[j] +=
-                dt * forces( i, j ) / particles[i].mass;
+                // dt * forces( i, j ) / particles[i].mass;
+                (dt * forces( i, j ) / particles[i].mass) + 
+                 (centerMass[j] - particles[i].position[j]) ;
+                //  + avgVelocity[j] ;
         }
         collision( i );
     }
@@ -235,6 +285,11 @@ idle( void )
                 d2[k][i] = d2[i][k];
             }
     last_time = present_time;
+
+    std::cout<< "Ini adalah X     " << avgVelocity[0] <<std::endl;
+    std::cout<< "Ini adalah Y     " << avgVelocity[1] <<std::endl;
+    std::cout<< "Ini adalah Z     " << avgVelocity[2] <<std::endl;
+
     glutPostRedisplay();
 }
 
