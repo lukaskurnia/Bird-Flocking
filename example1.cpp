@@ -201,26 +201,13 @@ void createParticle(void) {
         particles[i].color = i % NUM_COLORS;
         for ( int j = 0; j < 3; j++ ) {
             particles[i].position[j] =
-                // 2.0 * ( ( float ) rand() / RAND_MAX ) - 1.0;
                 2.0 * ( ( float ) rand() / RAND_MAX ) - 1.0;
             particles[i].velocity[j] =
                 speed * 2.0 * ( ( float ) rand() / RAND_MAX ) - 1.0;
-                // speed * 2.0 *  - 1.0;
         }
-
-        std::cout<< "Ini adalah X  ke   "<< i << "   " << particles[i].velocity[0] <<std::endl;
-        std::cout<< "Ini adalah Y  ke   "<< i << "   " << particles[i].velocity[1] <<std::endl;
-        std::cout<< "Ini adalah Z  ke   "<< i << "   " << particles[i].velocity[2] <<std::endl;
-
         particles[i].position[3] = 1.0;
     }
     calcAvgVelocity();
-    std::cout<< "Ini adalah X     " << avgVelocity[0] <<std::endl;
-    std::cout<< "Ini adalah Y     " << avgVelocity[1] <<std::endl;
-    std::cout<< "Ini adalah Z     " << avgVelocity[2] <<std::endl;
-
-    // calcCenterMass();
-
 
     glClearColor( 0.5, 0.5, 0.5, 1.0 );
     glPointSize( point_size );
@@ -332,8 +319,6 @@ idle( void )
     float
         dt;
     present_time = glutGet( GLUT_ELAPSED_TIME );
-    // std::cout <<present_time  <<std::endl;
-    // std::cout <<last_time <<std::endl;
     dt = 0.001 * ( present_time - last_time );
     calcCenterMass();
     calcAvgVelocity();
@@ -344,16 +329,12 @@ idle( void )
 
             particles[i].velocity[j] += (dt * avgVelocity[i][j]) +
                 dt* (centerMass[i][j] - particles[i].position[j]) +
-                // (dt * separation[i][j]) +
                 (dt * forces( i, j ) / particles[i].mass) ;
-                //  + dt*avgVelocity[j] ;
             normalize();
             
         }
         collision( i );
-        // std::cout<< "Ini adalah X     " << separation[i][0] <<std::endl;
-        // std::cout<< "Ini adalah Y     " << separation[i][1] <<std::endl;
-        // std::cout<< "Ini adalah Z     " << separation[i][2] <<std::endl;
+
     }
     if ( repulsion )
         for ( i = 0; i < num_particles; i++ )
